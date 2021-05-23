@@ -20,14 +20,18 @@ def prepare_category_dfs(csv_path):
 def clean_reviews(df):
     # Get raw strings to process and convert to cleaned lists of words
     reviews = df["Review"].values
-    stop_words = set(stopwords.words('english'))
+    r_stopwords = stopwords.words('english')
     cleaned_reviews = []
+
+    # words we noticed many of in the reviews that don't say much about the tone of the review
+    extras = ["even", "think", "seem", "though"]
+    r_stopwords.extend(extras)
 
     for review in tqdm(reviews):
         pure_text = scrub_words(review)
         tokens = word_tokenize(pure_text)
         lcase_tokens = list(map(str.lower,tokens))
-        review_words = [w for w in lcase_tokens if not w in stop_words]
+        review_words = [w for w in lcase_tokens if not w in r_stopwords]
         cleaned_reviews.append(review_words)
 
     return cleaned_reviews
