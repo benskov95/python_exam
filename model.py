@@ -185,13 +185,3 @@ def get_model_args(model):
         if not hparam.startswith('__'):
             print(f"{hparam} -> {getattr(args_obj, hparam)}")
     print("Done printing arguments")
-
-
-def get_model_args(model):
-    print("Getting model arguments...")
-    model = fasttext.load_model(f"model/{model}")
-    args_obj = model.f.getArgs()
-    for hparam in dir(args_obj):
-        if not hparam.startswith('__'):
-            print(f"{hparam} -> {getattr(args_obj, hparam)}")
-    print("Done printing arguments")
