@@ -11,17 +11,14 @@ import csv
 from termcolor import colored
 import nltk
 import re
+import bs4
+import requests
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
 
 
-def clean_dataset():
-    print("Cleaning traning and test data and converting to fasttext compatible files...")
-    files = ["test", "train"]
-
-    newArray = []
-
+def clean_setence(setence):
     lemmatizer = WordNetLemmatizer()
     stop_words = set(stopwords.words('english'))
 
@@ -35,6 +32,30 @@ def clean_dataset():
         # remove whitespace
         text = text.strip()
         return text
+        # function to split text into word
+
+    tokens = word_tokenize(setence)
+
+    # Lower case
+    tokens = list(map(str.lower, tokens))
+
+    # Remove stop words
+    tokens = [w for w in tokens if not w in stop_words]
+
+    # Clean word
+    tokens = [scrub_words(w) for w in tokens]
+
+    # lemmatize
+    tokens = [lemmatizer.lemmatize(word=word, pos='v') for word in tokens]
+
+    return " ".join(tokens)
+
+
+def clean_dataset():
+    print("Cleaning traning and test data and converting to fasttext compatible files...")
+    files = ["test", "train"]
+
+    newArray = []
 
     for file in files:
         with open(f"dataset/{file}.csv", encoding="utf8") as f:
@@ -42,23 +63,9 @@ def clean_dataset():
             for row in reader:
                 row.pop(1)
 
-                # function to split text into word
-                tokens = word_tokenize(row[1])
+                setence = clean_setence(row[1])
 
-                # Lower case
-                tokens = list(map(str.lower, tokens))
-
-                # Remove stop words
-                tokens = [w for w in tokens if not w in stop_words]
-
-                # Clean word
-                tokens = [scrub_words(w) for w in tokens]
-
-                # lemmatize
-                tokens = [lemmatizer.lemmatize(
-                    word=word, pos='v') for word in tokens]
-
-                newArray.append("__label__" + row[0] + " " + " ".join(tokens))
+                newArray.append("__label__" + row[0] + " " + setence)
 
         with open(f"dataset/{file}.txt", "w", encoding="utf-8") as txt_file:
             for line in newArray:
@@ -113,28 +120,29 @@ def test_model(model):
     print(test)
 
 
-def download_model_with_085_precision():
-    if not path.isfile("model/trained_review_stars_model.0.85.bin"):
-        print("Downloading 0.85 precision model...")
+def download_model_with_90_precision():
+    if not path.isfile("model/trained_review_model_0.90.bin"):
+        print("Downloading 0.90 precision model...")
 
         if not os.path.isdir("model"):
             os.makedirs("model")
 
         urllib.request.urlretrieve(
-            "https://storage.googleapis.com/selfiecircleweb.appspot.com/trained_review_stars_model.0.85.bin", "model/trained_review_stars_model.0.85.bin")
+            "https://storage.googleapis.com/selfiecircleweb.appspot.com/trained_review_model_0.90.bin", "model/trained_review_model_0.90.bin")
 
         print("Download complete.")
     else:
         print("Model already downloaded.")
 
 
-def predict_with_model(reviews, model):
+def predict_with_model(reviews, model, printLines):
     print(f"Predicting {len(reviews)} reviews...")
     model = fasttext.load_model(f"model/{model}")
 
     correctCount = 0
     for i, review in enumerate(reviews):
-        prediction = model.predict(review[0], k=5)
+        setence = clean_setence(review[0])
+        prediction = model.predict(setence, k=5)
 
         star = prediction[0][0][-1]
         precision = "{:.2%}".format(prediction[1][0])
@@ -145,15 +153,15 @@ def predict_with_model(reviews, model):
         if review[1] == int(star):
             color = "green"
             correctCount += 1
+        if(printLines):
+            print(
+                colored(
+                    f"{i}. Corrent rating: {review[1]} Guess: Rating: {star} Probability: {precision}", color=color))
 
-        print(
-            colored(
-                f"{i}. Corrent rating: {review[1]} Guess: Rating: {star} Probability: {precision}", color=color))
-
-        color = "green" if review[1] == int(star2) else "red"
-        print(
-            colored(
-                f"{i}. Corrent rating: {review[1]} Guess: Rating: {star2} Probability: {precision2}", color=color))
+            color = "green" if review[1] == int(star2) else "red"
+            print(
+                colored(
+                    f"{i}. Corrent rating: {review[1]} Guess: Rating: {star2} Probability: {precision2}", color=color))
 
     print("Results: ")
     print(f"Correct: {correctCount} - {correctCount / (len(reviews)) * 100}%")
@@ -167,6 +175,16 @@ def predict_with_model(reviews, model):
     wrongPercent = calculateWrongPercentage()
     print(
         f"Wrong: {len(reviews) - correctCount} - {wrongPercent}%")
+
+
+def get_model_args(model):
+    print("Getting model arguments...")
+    model = fasttext.load_model(f"model/{model}")
+    args_obj = model.f.getArgs()
+    for hparam in dir(args_obj):
+        if not hparam.startswith('__'):
+            print(f"{hparam} -> {getattr(args_obj, hparam)}")
+    print("Done printing arguments")
 
 
 def get_model_args(model):
