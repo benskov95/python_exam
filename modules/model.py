@@ -11,14 +11,13 @@ import csv
 from termcolor import colored
 import nltk
 import re
-import bs4
-import requests
+from tqdm import tqdm
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
 
 
-def clean_setence(setence):
+def clean_sentence(sentence):
     lemmatizer = WordNetLemmatizer()
     stop_words = set(stopwords.words('english'))
 
@@ -34,7 +33,7 @@ def clean_setence(setence):
         return text
         # function to split text into word
 
-    tokens = word_tokenize(setence)
+    tokens = word_tokenize(sentence)
 
     # Lower case
     tokens = list(map(str.lower, tokens))
@@ -52,7 +51,7 @@ def clean_setence(setence):
 
 
 def clean_dataset():
-    print("Cleaning traning and test data and converting to fasttext compatible files...")
+    print("Cleaning training and test data and converting to fasttext compatible files...")
     files = ["test", "train"]
 
     newArray = []
@@ -60,12 +59,12 @@ def clean_dataset():
     for file in files:
         with open(f"dataset/{file}.csv", encoding="utf8") as f:
             reader = csv.reader(f)
-            for row in reader:
+            for row in tqdm(reader):
                 row.pop(1)
 
-                setence = clean_setence(row[1])
+                sentence = clean_sentence(row[1])
 
-                newArray.append("__label__" + row[0] + " " + setence)
+                newArray.append("__label__" + row[0] + " " + sentence)
 
         with open(f"dataset/{file}.txt", "w", encoding="utf-8") as txt_file:
             for line in newArray:
@@ -76,9 +75,10 @@ def clean_dataset():
 
 def download_dataset():
     print("Downloading dataset...")
-    if not path.isfile("amazon_review_full_csv.tar.gz"):
+    if not path.exists("./dataset/amazon_review_full_csv.tar.gz"):
+        os.makedirs("./dataset")
         urllib.request.urlretrieve(
-            "https://storage.googleapis.com/selfiecircleweb.appspot.com/amazon_review_full_csv.tar.gz", "amazon_review_full_csv.tar.gz")
+            "https://storage.googleapis.com/selfiecircleweb.appspot.com/amazon_review_full_csv.tar.gz", "./dataset/amazon_review_full_csv.tar.gz")
 
         print("Download complete.")
     else:
@@ -88,9 +88,9 @@ def download_dataset():
 def extract_dataset():
     print("Extracting dataset...")
 
-    if not path.exists("dataset"):
+    if not path.exists("./dataset/train.csv"):
         # Extract files
-        file = tarfile.open('amazon_review_full_csv.tar.gz')
+        file = tarfile.open('./dataset/amazon_review_full_csv.tar.gz')
         file.extractall('./dataset')
         file.close()
 
@@ -100,8 +100,9 @@ def extract_dataset():
         shutil.move(os.path.join(
             "./dataset/amazon_review_full_csv", "train.csv"), "./dataset")
         shutil.rmtree("./dataset/amazon_review_full_csv")
-
-    print("Extracting complete.")
+        print("Extraction complete.")
+    else:
+        print("Dataset has already been extracted.")
 
 
 def train_autotune(seconds):
@@ -115,7 +116,7 @@ def train_autotune(seconds):
 
 def test_model(model):
     print("Testing model...")
-    model = fasttext.load_model(f"model/{model}")
+    model = fasttext.load_model(model)
     test = model.test("dataset/test.txt")
     print(test)
 
@@ -141,7 +142,7 @@ def predict_with_model(reviews, model, printLines):
 
     correctCount = 0
     for i, review in enumerate(reviews):
-        setence = clean_setence(review[0])
+        setence = clean_sentence(review[0])
         prediction = model.predict(setence, k=5)
 
         star = prediction[0][0][-1]
@@ -179,7 +180,7 @@ def predict_with_model(reviews, model, printLines):
 
 def get_model_args(model):
     print("Getting model arguments...")
-    model = fasttext.load_model(f"model/{model}")
+    model = fasttext.load_model(model)
     args_obj = model.f.getArgs()
     for hparam in dir(args_obj):
         if not hparam.startswith('__'):

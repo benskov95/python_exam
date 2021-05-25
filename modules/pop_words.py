@@ -11,7 +11,7 @@ def prepare_category_dfs(csv_path):
 
     # Creating dataframe for each rating
     df_list = []
-    for x in tqdm(range(1, 6)):
+    for x in range(1, 6):
         rating_df = main_df[main_df["Rating"] == x]
         df_list.append(rating_df)
 
