@@ -11,7 +11,6 @@ import csv
 from termcolor import colored
 import nltk
 import re
-from tqdm import tqdm
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
@@ -59,7 +58,7 @@ def clean_dataset():
     for file in files:
         with open(f"dataset/{file}.csv", encoding="utf8") as f:
             reader = csv.reader(f)
-            for row in tqdm(reader):
+            for row in reader:
                 row.pop(1)
 
                 sentence = clean_sentence(row[1])
