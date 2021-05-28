@@ -84,6 +84,17 @@ def download_dataset():
     else:
         print("Dataset already downloaded.")
 
+def download_text_files():
+    print("Downloading training and test text files...")
+    if not path.exists("./dataset/train.txt") and not path.exists("./dataset/test.txt"):
+        urllib.request.urlretrieve(
+            "https://storage.googleapis.com/selfiecircleweb.appspot.com/train.txt", "./dataset/train.txt")
+        urllib.request.urlretrieve(
+            "https://storage.googleapis.com/selfiecircleweb.appspot.com/test.txt", "./dataset/test.txt")
+
+        print("Download complete.")
+    else:
+        print("Text files already downloaded.")
 
 def extract_dataset():
     print("Extracting dataset...")
