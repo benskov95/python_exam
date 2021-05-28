@@ -152,8 +152,8 @@ def predict_with_model(reviews, model, printLines):
 
     correctCount = 0
     for i, review in enumerate(reviews):
-        setence = clean_sentence(review[0])
-        prediction = model.predict(setence, k=5)
+        sentence = clean_sentence(review[0])
+        prediction = model.predict(sentence, k=5)
 
         star = prediction[0][0][-1]
         precision = "{:.2%}".format(prediction[1][0])
